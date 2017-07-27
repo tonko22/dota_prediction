@@ -1,0 +1,90 @@
+import json
+import numpy as np
+
+
+with open('D:/Python/Lib/site-packages/dota2api/ref/heroes.json') as heroes_json:
+    with open('D:/Python/Lib/site-packages/dota2api/ref/modes.json') as modes_json:
+        heroes = json.load(heroes_json)
+        modes = json.load(modes_json)
+        # Создаем одномерный массив с ID героев
+        hero_id_array = np.arange(1, 114)
+        # Делаем его вертикальным
+        hero_id_array.shape = (113,1)
+        # Создаем вертикальный массив для счетчиков героев и забиваем нулями
+        hero_counters_array = np.zeros((113, 1))
+        # Создаем вертикальный массив для процентов и забиваем нулями
+        percentage_array = np.zeros((113, 1))
+        # Склеиваем массивы по столбцам
+        stats = np.concatenate((hero_id_array, hero_counters_array, percentage_array), axis=1)
+        # Счетчик строк в файле
+        line_counter = 0
+        # Массив с гейм модами и номерами
+        modes_array = np.arange(0, 23)
+        # Print
+        for each in range(len(modes_array)):
+            print(" %-2d %-20s" % (modes_array[each], modes['modes'][each]['name']))
+
+        print("Input game mode\n")
+        game_mode = input()
+        game_mode_match_counter = 0
+        with open('DOTA_parsed.txt', 'r') as f:
+            for line in f:
+                #Счетчик строк в исходном файле
+                line_counter=line_counter+1
+                items = line.split(',')
+
+
+                #For input game mode
+                if int(items[1]) == int(game_mode):
+                    game_mode_match_counter = game_mode_match_counter+1
+                    for item in items[2:12]:
+                        #для каждого айди героя
+                        for each in stats:
+                            if int(each[0]) == int(item):
+                                each[1] = (each[1])+1
+                                break
+                #All game modes
+                elif int(game_mode) == 0:
+                    game_mode_match_counter = game_mode_match_counter + 1
+                    for item in items[2:12]:
+                        #для каждого айди героя
+                        for each in stats:
+                            if int(each[0]) == int(item):
+                                each[1] = (each[1])+1
+                                break
+
+            #Счетчик героев
+            hero_counter = 0
+            for each in stats:
+                hero_counter = hero_counter + each[1]
+                #percents per hero
+                each[2] = each[1]/line_counter*100/10
+
+            #Сумму всех процентов
+            percent_sum = 0
+            for each in stats[..., 2]:
+                percent_sum = percent_sum + each
+
+            # Сортировать все столбцы по популярности героев и перевернуть
+            stats = np.flipud(stats[np.argsort(stats[..., 1])])
+
+            #Создаем столбец с именами героев
+            hero_names_array = list()
+            for each in stats[..., 0]:
+                for hero in heroes['heroes']:
+                    if hero['id'] == int(each):
+                        hero_names_array.append(str(hero['localized_name']))
+                        break
+
+
+
+            #для всех элементов в столбце
+            for each in range(len(heroes['heroes'])):
+                print(" %-19s: %-7d %-5f %% " % (hero_names_array[each], stats[each, 1], stats[each, 2]))
+                #print(stats[each])
+
+            print('total matches: ', line_counter)
+            print('total heroes: ', hero_counter)
+            print('matches of game mode 0{0}: {1}'.format(game_mode, game_mode_match_counter))
+
+            #"""
